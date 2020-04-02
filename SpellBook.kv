@@ -1,0 +1,126 @@
+<Conteiner>:
+    cols: 1
+    rows: 1
+
+<MainWindow>:
+
+    label: label
+    gridArea: gridArea
+    scrollView: scrollView
+    addbutton: addbutton
+
+    cols: 1
+    spacing: 10
+
+    AnchorLayout:
+        padding: [15, 15, 15, 0]
+        size_hint: 1, .1
+
+        BoxLayout:
+            orientation: 'horizontal'
+
+            Label:
+                id:label
+                text_size: self.size
+                halign: 'left'
+                font_size: '25sp'
+
+            Button:
+                id: addbutton
+                size_hint: None, 1
+                size: self.height, self.height
+
+    ScrollView:
+        id: scrollView
+        padding: [15, 0, 15, 0]
+
+        GridLayout:
+            padding: [15, 0, 15, 0]
+            cols:1
+            id: gridArea
+            spacing: 10
+            size_hint_y: None
+
+
+<CharacterFrame>:
+
+    delbutton: delbutton
+    nameLabel: nameLabel
+
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: 40
+
+    Label:
+        id: nameLabel
+        text: 'Some test text'
+        on_touch_down: root.touch()
+
+    Button:
+        id: delbutton
+        size_hint: None, 1
+        size: self.height, self.height
+        text: 'Del'
+
+
+<ClassButton@Button>:
+    status: False
+    background_normal: ''
+    background_color: 255, 0, 0, 255
+
+<CharacterCharacteristic>:
+
+    cancelButton: cancelButton
+    acceptButton: acceptButton
+    nameInput: nameInput
+
+    button1: button1
+    button2: button2
+    button3: button3
+    button4: button4
+    button5: button5
+    button6: button6
+
+    orientation: 'vertical'
+    spacing: '3sp'
+    padding: '10sp'
+
+    TextInput:
+        id: nameInput
+        size_hint_y: .1
+        spacing: '3sp'
+        multiline: False
+        cursor_color: 0, 0, 0, 255
+        font_size: '35sp'
+
+    GridLayout:
+        cols:3
+        rows:2
+        size_hint_y:.2
+        spacing: '3sp'
+        ClassButton:
+            id: button1
+        ClassButton:
+            id: button2
+        ClassButton:
+            id: button3
+        ClassButton:
+            id: button4
+        ClassButton:
+            id: button5
+        ClassButton:
+            id: button6
+
+    Widget:
+        size_hint_y:.6
+
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: .1
+        spacing: '3sp'
+
+        Button:
+            id: acceptButton
+
+        Button:
+            id: cancelButton
