@@ -1,4 +1,4 @@
-<Conteiner>:
+<Container>:
     cols: 1
     rows: 1
 
@@ -53,8 +53,6 @@
 
     Label:
         id: nameLabel
-        text: 'Some test text'
-        on_touch_down: root.touch()
 
     Button:
         id: delbutton
@@ -80,6 +78,7 @@
     button4: button4
     button5: button5
     button6: button6
+    button7: button7
 
     orientation: 'vertical'
     spacing: '3sp'
@@ -95,7 +94,7 @@
 
     GridLayout:
         cols:3
-        rows:2
+        rows:3
         size_hint_y:.2
         spacing: '3sp'
         ClassButton:
@@ -110,6 +109,8 @@
             id: button5
         ClassButton:
             id: button6
+        ClassButton:
+            id: button7
 
     Widget:
         size_hint_y:.6

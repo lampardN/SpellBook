@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 URL = 'https://pathfinder-wiki.ru/spells/page/'
 HEADERS = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36 OPR/67.0.3575.105', 'accept': 'application/json, text/javascript, */*; q=0.01', 'accept-language':'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7', 'accept-encoding': 'gzip, deflate, br'}
 SpellList = []
+Errors = []
 
 
 def get_html(url, params=None):
@@ -12,6 +13,7 @@ def get_html(url, params=None):
 
 
 def get_characteristic(html, name):
+    print(f' >> {name}', end='')
     soup = BeautifulSoup(html, 'html.parser')
     characteristics = soup.find_all('section', class_='post_content')
     for characteristic in characteristics:
@@ -22,21 +24,33 @@ def get_characteristic(html, name):
                   'друид': False,
                   'паладин': False,
                   'следопыт': False,
-                  'чародей/волшебник': False}
-        x = parameters[1].text.split()[1:]
-        for i in range(0, len(x), 3):
-            if x[i].lower() in class_.keys():
-                class_[x[i]] = True
+                  'чародей': False,
+                  'волшебник': False}
+        x = parameters[1].text
+        for i in range(len(x)):
+            if x[i] in '0123456789':
+                x = x[:i + 1] + ',' + x[i + 1:]
+        x = x.replace(',,', ',')
+        x = x.split(',')
+        x = [x[0].split(':')[1]] + x[1:]
+        cur_levels = []
+        for e in x:
+            cur_classes = e.split('(')[0].strip().split('/')
+            for cur_class in cur_classes:
+                if cur_class in class_.keys():
+                    cur_levels.append(int(e.split(')')[1].strip()))
+                    class_[cur_class] = True
 
-        level = [1000000000]
-        for i in range(2, len(x), 3):
-            num = ''
-            for j in x[i]:
-                if j in '0123456789':
-                    num += j
-            if num == '': continue
-            level.append(int(num))
-        level = str(min(level))
+        count = 0
+        for key in class_.keys():
+            if not(class_[key]):
+                count += 1
+        if count == len(class_.keys()):
+            Errors.append(name)
+            print('\n')
+            continue
+
+        level = min(cur_levels)
 
         time = ''
         x = parameters[2].text.split()[2:]
@@ -87,23 +101,29 @@ def get_characteristic(html, name):
              'Description': description
              }
         )
+        print('\n')
 
 
 def get_content(html):
     soup = BeautifulSoup(html, 'html.parser')
     spells = soup.find_all('td', class_='cat-hadding')
+    count = 1
     for spell in spells:
+        print(f'Заклинание №{count}', end='')
         r = requests.get(spell.find('a').get('href'), headers=HEADERS)
         get_characteristic(r.text, spell.text.strip())
+        count += 1
 
 
 def parse():
-    for i in range(2, 22): #max=22
+    for i in range(1, 22): #max=22
+        print(f'Страница №{i}\n')
         html = get_html(URL+f'{i}/')
         if html.status_code == 200:
             get_content(html.text)
         else:
             print('Error')
+        print('\n')
 
 
 parse()
@@ -112,21 +132,26 @@ import sqlite3
 db = sqlite3.connect('SpellBook.db')
 cursor = db.cursor()
 for spell in SpellList:
-    cursor.execute('INSERT INTO Spells VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [spell['Spell'],
-                                                                                     spell['Level'],
-                                                                                     spell['School'],
-                                                                                     spell['Components'],
-                                                                                     spell['Target'],
-                                                                                     spell['Distance'],
-                                                                                     spell['Duration'],
-                                                                                     spell['Test'],
-                                                                                     spell['Resistance'],
-                                                                                     spell['Time'],
-                                                                                     spell['Description'],
-                                                                                     spell['Class']['бард'],
-                                                                                     spell['Class']['жрец'],
-                                                                                     spell['Class']['друид'],
-                                                                                     spell['Class']['паладин'],
-                                                                                     spell['Class']['следопыт'],
-                                                                                     spell['Class']['чародей/волшебник']])
+    cursor.execute('INSERT INTO Spells VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [spell['Spell'],
+                                                                                           spell['Level'],
+                                                                                           spell['School'],
+                                                                                           spell['Components'],
+                                                                                           spell['Target'],
+                                                                                           spell['Distance'],
+                                                                                           spell['Duration'],
+                                                                                           spell['Test'],
+                                                                                           spell['Resistance'],
+                                                                                           spell['Time'],
+                                                                                           spell['Description'],
+                                                                                           spell['Class']['бард'],
+                                                                                           spell['Class']['жрец'],
+                                                                                           spell['Class']['друид'],
+                                                                                           spell['Class']['паладин'],
+                                                                                           spell['Class']['следопыт'],
+                                                                                           spell['Class']['чародей'],
+                                                                                           spell['Class']['волшебник']
+                                                                                           ])
     db.commit()
+
+for error in Errors:
+    print(error)

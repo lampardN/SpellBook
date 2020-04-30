@@ -1,163 +1,56 @@
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
-from kivy.properties import ObjectProperty
-from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.dropdown import DropDown
 
-import sqlite3
+from CharacterFrame import CharacterFrame
+from CharacterCharacteristic import CharacterCharacteristic
+from MainWindow import MainWindow
+from CharacterBook import CharacterBook
+from dbController import dbController
 
 from kivy.core.window import Window
 Window.size = (1080//3, 2160//3)
 
 Characters = []
 WindowWidget = []
-Classes = ['Бард', 'Жрец', 'Друид', 'Паладин', 'Следопыт', 'Чародей\nВолшебник']
-
-db = sqlite3.connect('SpellBook.db')
-cursor = db.cursor()
 
 
-class MainWindow(GridLayout):
-    label = ObjectProperty()
-    gridArea = ObjectProperty()
-    scrollView = ObjectProperty()
-    addbutton = ObjectProperty()
+class Container(GridLayout):
+    def __init__(self):
+        super().__init__()
+        self.mainWindow = MainWindow()
+        self.mainWindow.addbutton.bind(on_release=self.switchToCharacteristicWindow)
 
+        self.CharacteristicWindow = CharacterCharacteristic()
+        self.CharacteristicWindow.acceptButton.bind(on_release=self.addCharacter)
+        self.CharacteristicWindow.cancelButton.bind(on_release=self.switchToMainWindow)
 
-    def start(self):
-        self.label.text = "Персонажи"
-        self.gridArea.bind(minimum_height=self.gridArea.setter('height'))
+        self.CharacterBook = CharacterBook()
 
-    def addCharacter(self, widget):
-        global cursor, db
-        Characters[-1].delbutton.bind(on_release=self.delCharacter)
+        WindowWidget.append(self.mainWindow)
+        WindowWidget.append(self.CharacteristicWindow)
+        WindowWidget.append(self.CharacterBook)
+
+        self.loadCharacters()
+        self.add_widget(self.mainWindow)
+
+    def addCharacter(self, button):
+        Characters[-1].name = self.CharacteristicWindow.nameInput.text
+        for button in self.CharacteristicWindow.buttons:
+            Characters[-1].CharacterClasses[button.text] = button.status
+        Characters[-1].delbutton.bind(on_release=self.deleteCharacter)
+        dbController().addCharacter(Characters[-1])
+        Characters[-1].id = dbController().loadCharacters()[-1][0]
         Characters[-1].create()
-        self.gridArea.add_widget(Characters[-1])
-
-        cursor.execute('INSERT INTO Characters VALUES (?, ?, ?)', [(Characters[-1].name),
-                                                                    (Characters[-1].Class),
-                                                                    ('')])
-        db.commit()
-
-
-    def delCharacter(self, widget):
-        global cursor, db
-        for Character in Characters:
-            if Character.delbutton == widget:
-                self.gridArea.remove_widget(Character)
-                cursor.execute('DELETE FROM Characters WHERE name=? AND class=?', [(Character.name), (Character.Class)])
-                db.commit()
-                del Character
-                break
-
-
-
-class CharacterCharacteristic(BoxLayout):
-    acceptButton = ObjectProperty()
-    cancelButton = ObjectProperty()
-    nameInput = ObjectProperty()
-    button1 = ObjectProperty()
-    button2 = ObjectProperty()
-    button3 = ObjectProperty()
-    button4 = ObjectProperty()
-    button5 = ObjectProperty()
-    button6 = ObjectProperty()
-    buttons = []
-
-    def start(self):
-        self.buttons = [self.button1, self.button2, self.button3, self.button4, self.button5, self.button6]
-        for i in range(6): self.buttons[i].text = Classes[i]
-
-    def setClass(self, button):
-        if button.status:
-            button.background_color = [255, 0, 0, 255]
-        else:
-            button.background_color = [0, 255, 0, 255]
-        button.status = not(button.status)
-        Characters[-1].CharacterClasses[button.text.replace('\n','')] = not(Characters[-1].CharacterClasses[button.text.replace('\n','')])
-
-    def onFocus(self, widget, value):
-        if not(value):
-            Characters[-1].name = self.nameInput.text
-
-    def switchColor(self, button):
-        if button.status:
-            button.background_color = [255, 0, 0, 255]
-        else:
-            button.background_color = [0, 255, 0, 255]
-        button.status = not(button.status)
-
-
-class CharacterFrame(BoxLayout):
-    delbutton = ObjectProperty()
-    nameLabel = ObjectProperty()
-    name = ''
-    Class = ''
-    CharacterClasses = {}
-
-    def start(self):
-        self.CharacterClasses = {
-        'Бард': False,
-        'Жрец': False,
-        'Друид': False,
-        'Паладин': False,
-        'Следопыт': False,
-        'ЧародейВолшебник': False,
-        }
-
-    def create(self):
-        name = self.name+' '
-        keys = list(self.CharacterClasses.keys())
-        for key in keys:
-            if self.CharacterClasses[key]:
-                self.Class += key + ' '
-                name += key[0]+', '
-        self.nameLabel.text = name[:-2]
-        self.Class = self.Class[:-1]
-
-
-    def touch(self):
-        print(1)
-
-
-
-class Conteiner(GridLayout):
-    def start(self):
-        mainwindow = MainWindow()
-        mainwindow.start()
-        mainwindow.addbutton.bind(on_release=self.switchToCharacteristicWindow)
-        WindowWidget.append(mainwindow)
-
-        CharacteristicWindow = CharacterCharacteristic()
-        CharacteristicWindow.start()
-
-        CharacteristicWindow.acceptButton.bind(on_release=mainwindow.addCharacter)
-        CharacteristicWindow.acceptButton.bind(on_release=self.switchToMainWindow)
-
-        CharacteristicWindow.cancelButton.bind(on_release=self.switchToMainWindow)
-
-        CharacteristicWindow.button1.bind(on_release=CharacteristicWindow.setClass)
-        CharacteristicWindow.button2.bind(on_release=CharacteristicWindow.setClass)
-        CharacteristicWindow.button3.bind(on_release=CharacteristicWindow.setClass)
-        CharacteristicWindow.button4.bind(on_release=CharacteristicWindow.setClass)
-        CharacteristicWindow.button5.bind(on_release=CharacteristicWindow.setClass)
-        CharacteristicWindow.button6.bind(on_release=CharacteristicWindow.setClass)
-
-        CharacteristicWindow.nameInput.bind(focus=CharacteristicWindow.onFocus)
-
-        WindowWidget.append(CharacteristicWindow)
-
-        self.add_widget(mainwindow)
+        self.switchToMainWindow(None)
 
     def switchToCharacteristicWindow(self, button):
         self.remove_widget(WindowWidget[0])
         self.add_widget(WindowWidget[1])
         Characters.append(CharacterFrame())
-        Characters[-1].start()
+        #  Characters[-1].nameLabel.bind(on_touch_down=self.switchToCharacterBook)
 
     def switchToMainWindow(self, button):
+        self.reloadMainWindow()
         if button == WindowWidget[1].cancelButton: Characters.pop(-1)
         WindowWidget[1].nameInput.text = ''
         for button in WindowWidget[1].buttons:
@@ -166,11 +59,53 @@ class Conteiner(GridLayout):
         self.remove_widget(WindowWidget[1])
         self.add_widget(WindowWidget[0])
 
+    def switchToCharacterBook(self, label, mouse):
+        self.remove_widget(WindowWidget[0])
+        self.add_widget(WindowWidget[2])
+
+    def reloadMainWindow(self):
+        for character in Characters:
+            try:
+                self.mainWindow.gridArea.remove_widget(character)
+            except:
+                pass
+        for character in Characters:
+            self.mainWindow.gridArea.add_widget(character)
+            print(character.name, character.nameLabel.text)
+
+    def deleteCharacter(self, button):
+        for Character in Characters:
+            if Character.delbutton == button:
+                dbController().delCharacter(Character)
+                self.mainWindow.gridArea.remove_widget(Character)
+                dbController().reloadID()
+                del Character
+                return
+
+    def loadCharacters(self):
+        CharactersFromDB = dbController().loadCharacters()
+        for Character in CharactersFromDB:
+            CurCharacter = CharacterFrame()
+            CurCharacter.id = Character[0]
+            CurCharacter.name = Character[1]
+            CurCharacter.CharacterClasses['Бард'] = Character[2]
+            CurCharacter.CharacterClasses['Жрец'] = Character[3]
+            CurCharacter.CharacterClasses['Друид'] = Character[4]
+            CurCharacter.CharacterClasses['Паладин'] = Character[5]
+            CurCharacter.CharacterClasses['Следопыт'] = Character[6]
+            CurCharacter.CharacterClasses['Чародей'] = Character[7]
+            CurCharacter.CharacterClasses['Волшебник'] = Character[8]
+            CurCharacter.create()
+            CurCharacter.delbutton.bind(on_release=self.deleteCharacter)
+            #  CurCharacter.nameLabel.bind(on_touch_down=self.switchToCharacterBook)
+            Characters.append(CurCharacter)
+            self.mainWindow.gridArea.add_widget(CurCharacter)
+
+
 class SpellBookApp(App):
     def build(self):
-        conteiner = Conteiner()
-        conteiner.start()
-        return conteiner
+        container = Container()
+        return container
 
 
 if __name__ == '__main__':
